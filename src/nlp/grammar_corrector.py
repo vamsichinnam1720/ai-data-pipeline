@@ -1,5 +1,5 @@
 """Grammar corrector"""
-from pyspellchecker import SpellChecker
+from spellchecker import SpellChecker
 import re
 from src.monitoring.logger import logger
 
