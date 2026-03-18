@@ -1,0 +1,23 @@
+{
+  "weather": {
+    "openweathermap": {
+      "base_url": "https://api.openweathermap.org/data/2.5/weather",
+      "requires_key": true,
+      "params": {"q": "{city}", "appid": "{api_key}", "units": "metric"}
+    }
+  },
+  "stock": {
+    "alphavantage": {
+      "base_url": "https://www.alphavantage.co/query",
+      "requires_key": true,
+      "params": {"function": "TIME_SERIES_DAILY", "symbol": "{symbol}", "apikey": "{api_key}"}
+    }
+  },
+  "crypto": {
+    "coingecko": {
+      "base_url": "https://api.coingecko.com/api/v3/simple/price",
+      "requires_key": false,
+      "params": {"ids": "{coin_id}", "vs_currencies": "usd"}
+    }
+  }
+}

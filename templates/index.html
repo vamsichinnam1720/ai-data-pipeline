@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Data Engineering Pipeline - Self-Healing & NLI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.8em;
+            font-weight: bold;
+        }
+
+        .header .subtitle {
+            color: #764ba2;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .tab {
+            padding: 12px 25px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            background: #f8f9ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e8ebff;
+            border-color: #667eea;
+        }
+
+        .api-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .api-card {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .api-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .api-card.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .api-card h3 {
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .api-card p {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        #queryInput {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            transition: border-color 0.3s;
+        }
+
+        #queryInput:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        .status-success, .status-csv {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .status-api {
+            background: #e7f3ff;
+            color: #004085;
+        }
+
+        .data-preview {
+            max-height: 500px;
+            overflow: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:hover {
+            background: #f5f5f5;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-box h3 {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 5px;
+        }
+
+        .stat-box p {
+            color: rgba(255,255,255,0.9);
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .healing-log {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8ebff 100%);
+            border-left: 5px solid #667eea;
+            border-radius: 10px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .healing-log h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .healing-log-item {
+            padding: 10px 15px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 8px;
+            font-size: 0.95em;
+            color: #333;
+            border-left: 4px solid #4facfe;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .healing-log-item.success {
+            border-left-color: #38ef7d;
+        }
+
+        .healing-log-item.warning {
+            border-left-color: #ffc107;
+        }
+
+        .healing-log-item.error {
+            border-left-color: #f5576c;
+        }
+
+        .charts-container {
+            margin-top: 30px;
+            padding: 25px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .charts-container h3 {
+            color: #667eea;
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 1.6em;
+        }
+
+        .line-chart-box {
+            background: #f8f9ff;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .line-chart-box canvas {
+            max-width: 100%;
+            margin: 0 auto;
+            display: block;
+        }
+
+        .download-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .download-section h3 {
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .refresh-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            z-index: 10000;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .questions-container {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .question-btn {
+            width: 100%;
+            text-align: left;
+            margin: 5px 0;
+            background: #f8f9ff;
+            color: #667eea;
+            padding: 12px 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .question-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .row-count-badge {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 10px 0;
+            font-size: 1.1em;
+        }
+
+        /* Floating Smart Assistant Styles */
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(102, 126, 234, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+        }
+        @keyframes float-bot {
+            0% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-5px) scale(1.05); }
+            100% { transform: translateY(0px) scale(1); }
+        }
+
+        .assistant-fab {
+            position: fixed;
+            bottom: 40px;
+            right: 40px;
+            width: 75px;
+            height: 75px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 25px rgba(102,126,234,0.5);
+            cursor: pointer;
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 3px solid white;
+            animation: pulse-glow 2s infinite, float-bot 4s ease-in-out infinite;
+        }
+        .assistant-fab:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            animation: pulse-glow 1s infinite;
+        }
+        .assistant-fab svg {
+            width: 45px;
+            height: 45px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+        .floating-assistant {
+            position: fixed;
+            bottom: 110px;
+            right: 30px;
+            width: 400px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            border: 1px solid #e0e0e0;
+            overflow: hidden;
+            transform-origin: bottom right;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: calc(100vh - 140px);
+        }
+        .floating-assistant.active {
+            display: flex;
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.1); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .assistant-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .assistant-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .assistant-body {
+            padding: 15px;
+            height: 400px;
+            overflow-y: auto;
+            background: #f8f9ff;
+        }
+        .assistant-footer {
+            padding: 15px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 10px;
+        }
+        .assistant-footer input {
+            flex-grow: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 15px;
+        }
+        .assistant-footer button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1> AI Data Engineering Pipeline</h1>
+            <div class="subtitle">Self-Healing & NLI</div>
+            
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('csv')">📁 CSV Upload</button>
+                <button class="tab" onclick="switchTab('api')">🌐 Live APIs</button>
+                <button class="tab" onclick="switchTab('analytics')">📊 Analytics</button>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <span class="status-badge status-info" id="statusBadge">No data loaded</span>
+                <button class="btn btn-download" id="downloadBtn" onclick="downloadData()" disabled style="display: none;">
+                    📥 Download Clean Data
+                </button>
+                <button class="btn btn-warning" id="downloadAnomalyBtn" onclick="downloadAnomalyData()" disabled style="display: none;">
+                    ⚠️ Download Anomaly Data
+                </button>
+            </div>
+        </div>
+
+        <!-- CSV Upload Tab -->
+        <div id="csvTab" class="tab-content active">
+            <div class="card">
+                <h2>📁 Upload CSV File</h2>
+                <div class="upload-area" id="uploadArea">
+                    <p style="font-size: 3em; margin-bottom: 10px;">📊</p>
+                    <p style="font-size: 1.2em; margin-bottom: 10px;">Drop CSV here or click to browse</p>
+                    <p style="color: #666; margin-bottom: 15px;">Upload from your computer</p>
+                    <input type="file" id="fileInput" accept=".csv" style="display: none;">
+                    <button class="btn" onclick="document.getElementById('fileInput').click()">
+                        📂 Choose File
+                    </button>
+                </div>
+                <div id="uploadResult"></div>
+            </div>
+        </div>
+
+        <!-- Live APIs Tab -->
+        <div id="apiTab" class="tab-content">
+            <div class="card">
+                <h2>🌐 Live API Data Sources</h2>
+                <p style="margin-bottom: 20px; color: #666;">
+                    Connect to real-time data with AI self-healing
+                </p>
+                
+                <div class="api-grid" id="apiGrid"></div>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn btn-success" id="fetchApiBtn" onclick="fetchSelectedAPI()" disabled>
+                        🔄 Fetch Data Once
+                    </button>
+                    <button class="btn btn-success" id="autoRefreshBtn" onclick="toggleAutoRefresh()" disabled style="display: none;">
+                        🔄 Start Auto-Refresh (10 min)
+                    </button>
+                    <button class="btn btn-secondary" onclick="viewHistory()">
+                        📜 View History
+                    </button>
+                </div>
+                
+                <div id="suggestedQuestions"></div>
+                <div id="apiResult"></div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analyticsTab" class="tab-content">
+            <div class="card">
+                <h2>📊 Statistics & Visualizations</h2>
+                <button class="btn" id="statsBtn" onclick="getStatistics()" disabled>
+                    📈 View Statistics
+                </button>
+                <button class="btn btn-secondary" id="qualityBtn" onclick="getDataQuality()" disabled>
+                    ✅ Data Quality Report
+                </button>
+                <div id="statsResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Processing with AI...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let currentData = null;
+        let selectedAPI = null;
+        let processedData = null;
+        let autoRefreshInterval = null;
+        let autoRefreshActive = false;
+        let lineChartInstance = null;
+
+        const AUTO_REFRESH_INTERVAL = 600000; // 10 minutes
+
+        window.onload = function() {
+            loadAPIs();
+            setupFileUpload();
+        };
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            const tabMap = {
+                'csv': ['csvTab', 0],
+                'api': ['apiTab', 1],
+                'analytics': ['analyticsTab', 2]
+            };
+            
+            document.getElementById(tabMap[tab][0]).classList.add('active');
+            document.querySelectorAll('.tab')[tabMap[tab][1]].classList.add('active');
+        }
+
+        async function loadAPIs() {
+            try {
+                const response = await fetch('/api/live-apis');
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayAPIs(result.apis);
+                }
+            } catch (error) {
+                console.error('Failed to load APIs:', error);
+            }
+        }
+
+        function displayAPIs(apis) {
+            const grid = document.getElementById('apiGrid');
+            grid.innerHTML = '';
+            
+            for (const [key, api] of Object.entries(apis)) {
+                const card = document.createElement('div');
+                card.className = 'api-card';
+                card.onclick = () => selectAPI(key, card);
+                card.innerHTML = `
+                    <h3>${api.name}</h3>
+                    <p>${api.description}</p>
+                `;
+                grid.appendChild(card);
+            }
+        }
+
+        function selectAPI(apiKey, element) {
+            document.querySelectorAll('.api-card').forEach(c => c.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedAPI = apiKey;
+            
+            document.getElementById('fetchApiBtn').disabled = false;
+            document.getElementById('autoRefreshBtn').disabled = false;
+            document.getElementById('autoRefreshBtn').style.display = 'inline-block';
+            
+            loadSuggestedQuestions(apiKey);
+        }
+
+        async function loadSuggestedQuestions(source) {
+            try {
+                const response = await fetch('/api/suggested-questions/' + source);
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.questions && result.questions.length > 0) {
+                        let html = '<div class="questions-container"><h3 style="margin-bottom: 10px; color: #667eea;">💡 Suggested Questions</h3>';
+                        result.questions.forEach(q => {
+                            html += "<button class='question-btn' onclick='document.getElementById(\"chatInput\").value=\"" + q + "\"; toggleAssistant(); setTimeout(() => sendChatMessage(), 500);'>" + q + "</button>";
+                        });
+                        html += '</div>';
+                        const el = document.getElementById('suggestedQuestions');
+                        if (el) el.innerHTML = html;
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load suggested questions:", error);
+            }
+        }
+
+        async function fetchSelectedAPI() {
+            if (!selectedAPI) {
+                alert('Please select an API first');
+                return;
+            }
+
+            showLoading(true, 'AI Pipeline: Fetching live data...');
+
+            try {
+                const response = await fetch(`/api/fetch-live/${selectedAPI}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentData = result.data;
+                    processedData = result.data;
+                    displayAPIResult(result.data, result.healing_log, result.chart_data);
+                    enableControls();
+                    updateStatus(`API: ${result.data.api_name}`, 'api');
+                } else {
+                    showAlert('apiResult', result.error || 'Failed to fetch data', 'error');
+                }
+            } catch (error) {
+                showAlert('apiResult', 'Failed: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayAPIResult(data, healingLog, chartData) {
+            let healingLogHTML = '';
+            if (healingLog && healingLog.length > 0) {
+                healingLogHTML = `
+                    <div class="healing-log">
+                        <h4>🤖 AI Self-Healing Pipeline Log</h4>
+                        ${healingLog.map((log, index) => {
+                            let itemClass = 'healing-log-item';
+                            if (log.includes('✓') || log.includes('Successfully')) {
+                                itemClass += ' success';
+                            } else if (log.includes('⚠️') || log.includes('fallback')) {
+                                itemClass += ' warning';
+                            } else if (log.includes('❌')) {
+                                itemClass += ' error';
+                            }
+                            return `<div class="${itemClass}" style="animation-delay: ${index * 0.05}s">${log}</div>`;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            const rowCountBadge = `
+                <div class="row-count-badge">
+                    📊 Total Rows Fetched: ${data.rows.toLocaleString()}
+                </div>
+            `;
+
+            const statsHTML = `
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <h3>${data.rows.toLocaleString()}</h3>
+                        <p>Rows Fetched</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>${data.columns}</h3>
+                        <p>Columns</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>${data.quality_score.toFixed(1)}</h3>
+                        <p>AI Quality Score</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>${data.anomalies_fixed || 0}</h3>
+                        <p>AI Healed</p>
+                    </div>
+                </div>
+            `;
+
+            let chartsHTML = '';
+            if (chartData && chartData.type === 'line') {
+                chartsHTML = `
+                    <div class="charts-container">
+                        <h3>📈 ${chartData.title}</h3>
+                        <div class="line-chart-box">
+                            <canvas id="lineChart"></canvas>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const downloadHTML = `
+                <div class="download-section">
+                    <h3>📥 Download Data</h3>
+                    <button class="btn" style="background: white; color: #11998e;" onclick="downloadData()">
+                        💾 Download Clean Data (${data.rows.toLocaleString()} rows)
+                    </button>
+                    ${data.anomalies_detected > 0 ? `
+                    <button class="btn" style="background: white; color: #fa709a;" onclick="downloadAnomalyData()">
+                        ⚠️ Download Anomaly Data (${data.anomalies_detected} anomalies)
+                    </button>
+                    ` : ''}
+                </div>
+            `;
+
+            const previewHTML = `
+                <div class="data-preview">
+                    <h3 style="margin: 20px 0 10px 0;">📋 Data Preview (First 20 rows):</h3>
+                    ${createTable(data.preview)}
+                </div>
+            `;
+
+            const html = `
+                <div class="alert alert-success" style="margin-top: 20px;">
+                    <strong>✅ AI Pipeline Complete!</strong> Successfully fetched and processed data from ${data.api_name}
+                </div>
+                ${rowCountBadge}
+                ${healingLogHTML}
+                ${statsHTML}
+                ${chartsHTML}
+                ${downloadHTML}
+                ${previewHTML}
+            `;
+
+            document.getElementById('apiResult').innerHTML = html;
+
+            if (chartData && chartData.type === 'line') {
+                renderLineChart(chartData);
+            }
+        }
+
+        function renderLineChart(chartData) {
+            if (lineChartInstance) lineChartInstance.destroy();
+
+            const ctx = document.getElementById('lineChart');
+            if (ctx) {
+                const datasets = chartData.datasets.map(dataset => ({
+                    label: dataset.label,
+                    data: dataset.data,
+                    borderColor: dataset.color,
+                    backgroundColor: dataset.color + '20',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointBackgroundColor: dataset.color,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 7
+                }));
+
+                lineChartInstance = new Chart(ctx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    font: { size: 13, weight: 'bold' },
+                                    padding: 15,
+                                    usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                padding: 12,
+                                titleFont: { size: 14, weight: 'bold' },
+                                bodyFont: { size: 13 },
+                                displayColors: true
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                },
+                                ticks: {
+                                    font: { size: 11 }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    font: { size: 10 },
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        async function toggleAutoRefresh() {
+            if (autoRefreshActive) {
+                stopAutoRefresh();
+            } else {
+                startAutoRefresh();
+            }
+        }
+
+        async function startAutoRefresh() {
+            if (!selectedAPI) {
+                alert('Please select an API first');
+                return;
+            }
+
+            autoRefreshActive = true;
+            document.getElementById('autoRefreshBtn').innerHTML = '⏸️ Stop Auto-Refresh';
+            document.getElementById('autoRefreshBtn').classList.remove('btn-success');
+            document.getElementById('autoRefreshBtn').classList.add('btn-secondary');
+            
+            showRefreshIndicator();
+            
+            await fetchSelectedAPI();
+            
+            autoRefreshInterval = setInterval(async () => {
+                console.log('🔄 Auto-refresh: Fetching data...');
+                await fetchSelectedAPI();
+            }, AUTO_REFRESH_INTERVAL);
+            
+            alert('✓ Auto-refresh started! Data will update every 10 minutes.');
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+
+            autoRefreshActive = false;
+            document.getElementById('autoRefreshBtn').innerHTML = '🔄 Start Auto-Refresh (10 min)';
+            document.getElementById('autoRefreshBtn').classList.remove('btn-secondary');
+            document.getElementById('autoRefreshBtn').classList.add('btn-success');
+            
+            hideRefreshIndicator();
+            
+            alert('Auto-refresh stopped');
+        }
+
+        function showRefreshIndicator() {
+            if (document.getElementById('refreshIndicator')) return;
+            
+            const indicator = document.createElement('div');
+            indicator.id = 'refreshIndicator';
+            indicator.className = 'refresh-indicator';
+            indicator.innerHTML = '🔄 Auto-Refresh Active';
+            document.body.appendChild(indicator);
+        }
+
+        function hideRefreshIndicator() {
+            const indicator = document.getElementById('refreshIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function setupFileUpload() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    handleFileUpload(files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) {
+                    handleFileUpload(e.target.files[0]);
+                }
+            });
+        }
+
+        async function handleFileUpload(file) {
+            if (!file.name.endsWith('.csv')) {
+                showAlert('uploadResult', 'Please select a CSV file', 'error');
+                return;
+            }
+
+            if (autoRefreshActive) {
+                const proceed = confirm('Auto-refresh will be stopped. Continue?');
+                if (!proceed) return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showLoading(true, 'AI Pipeline: Processing CSV...');
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentData = result.data;
+                    processedData = result.data;
+                    displayUploadSuccess(result.data, result.healing_log);
+                    enableControls();
+                    updateStatus(`CSV: ${result.data.filename}`, 'csv');
+                    loadSuggestedQuestions('csv');
+                    
+                    if (result.auto_refresh_stopped) {
+                        stopAutoRefresh();
+                    }
+                } else {
+                    showAlert('uploadResult', result.error || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                showAlert('uploadResult', 'Upload failed: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayUploadSuccess(data, healingLog) {
+            let healingLogHTML = '';
+            if (healingLog && healingLog.length > 0) {
+                healingLogHTML = `
+                    <div class="healing-log">
+                        <h4>🤖 AI Self-Healing Pipeline Log</h4>
+                        ${healingLog.map((log, index) => {
+                            let itemClass = 'healing-log-item';
+                            if (log.includes('✓') || log.includes('Successfully')) {
+                                itemClass += ' success';
+                            } else if (log.includes('⚠️')) {
+                                itemClass += ' warning';
+                            }
+                            return `<div class="${itemClass}" style="animation-delay: ${index * 0.05}s">${log}</div>`;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            const html = `
+                <div class="alert alert-success" style="margin-top: 20px;">
+                    <strong>✅ AI Pipeline Complete!</strong> File processed successfully
+                </div>
+                
+                <div class="row-count-badge">
+                    📊 Total Rows: ${data.rows.toLocaleString()}
+                </div>
+                
+                ${healingLogHTML}
+                
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <h3>${data.rows.toLocaleString()}</h3>
+                        <p>Rows</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>${data.columns}</h3>
+                        <p>Columns</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>${data.quality_score.toFixed(1)}</h3>
+                        <p>AI Quality Score</p>
+                    </div>
+                    <div class="stat-box">
+                        <h3>${data.anomalies_fixed}</h3>
+                        <p>AI Healed</p>
+                    </div>
+                </div>
+                
+                <div class="download-section">
+                    <h3>📥 Download Data</h3>
+                    <button class="btn" style="background: white; color: #11998e;" onclick="downloadData()">
+                        💾 Download Clean Data (${data.rows.toLocaleString()} rows)
+                    </button>
+                    ${data.anomalies_detected > 0 ? `
+                    <button class="btn" style="background: white; color: #fa709a;" onclick="downloadAnomalyData()">
+                        ⚠️ Download Anomaly Data (${data.anomalies_detected} anomalies)
+                    </button>
+                    ` : ''}
+                </div>
+                
+                <div class="data-preview">
+                    <h3 style="margin: 20px 0 10px 0;">📋 Data Preview (First 20 rows):</h3>
+                    ${createTable(data.preview)}
+                </div>
+            `;
+            document.getElementById('uploadResult').innerHTML = html;
+        }
+
+        async function downloadData() {
+            showLoading(true, 'Preparing download...');
+
+            try {
+                const response = await fetch('/api/download-data', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `clean_data_${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    alert('✓ Download started!');
+                } else {
+                    alert('Download failed');
+                }
+            } catch (error) {
+                alert('Download failed: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function downloadAnomalyData() {
+            showLoading(true, 'Preparing anomaly data...');
+
+            try {
+                const response = await fetch('/api/download-anomaly-data', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `anomalies_${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    alert('✓ Anomaly data downloaded!');
+                } else {
+                    const result = await response.json();
+                    alert(result.error || 'No anomaly data');
+                }
+            } catch (error) {
+                alert('Download failed: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+
+
+        async function getStatistics() {
+            showLoading(true, 'Calculating statistics...');
+
+            try {
+                const response = await fetch('/api/statistics');
+                const result = await response.json();
+
+                if (result.success) {
+                    displayStatistics(result.data);
+                } else {
+                    showAlert('statsResult', result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('statsResult', 'Failed: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayStatistics(data) {
+            let html = '<div class="stats-grid" style="margin-top: 20px;">';
+            
+            html += `<div class="stat-box"><h3>${data.shape[0].toLocaleString()}</h3><p>Total Rows</p></div>`;
+            html += `<div class="stat-box"><h3>${data.shape[1]}</h3><p>Total Columns</p></div>`;
+
+            const totalMissing = Object.values(data.missing_values).reduce((a, b) => a + b, 0);
+            html += `<div class="stat-box"><h3>${totalMissing}</h3><p>Missing Values</p></div>`;
+            html += '</div>';
+
+            if (Object.keys(data.numeric_summary).length > 0) {
+                html += '<h3 style="margin-top: 30px;">Numeric Summary:</h3>';
+                html += '<div class="data-preview">';
+                
+                const numericData = [];
+                for (const [col, stats] of Object.entries(data.numeric_summary)) {
+                    numericData.push({
+                        Column: col,
+                        Mean: stats.mean?.toFixed(2),
+                        Median: stats['50%']?.toFixed(2),
+                        Std: stats.std?.toFixed(2),
+                        Min: stats.min?.toFixed(2),
+                        Max: stats.max?.toFixed(2)
+                    });
+                }
+                
+                html += createTable(numericData);
+                html += '</div>';
+            }
+
+            document.getElementById('statsResult').innerHTML = html;
+        }
+
+        async function getDataQuality() {
+            showLoading(true, 'AI: Analyzing quality...');
+
+            try {
+                const response = await fetch('/api/data-quality');
+                const result = await response.json();
+
+                if (result.success) {
+                    displayDataQuality(result.data);
+                } else {
+                    showAlert('statsResult', result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('statsResult', 'Failed: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayDataQuality(data) {
+            let html = `
+                <div style="margin-top: 20px;">
+                    <div class="stat-box" style="max-width: 300px; margin: 0 auto;">
+                        <h3>${data.quality_score.toFixed(1)}/100</h3>
+                        <p>AI Quality Score</p>
+                    </div>
+                    <h3 style="margin-top: 20px; text-align: center;">
+                        Status: ${data.is_valid ? '✓ PASSED' : '✗ FAILED'}
+                    </h3>
+            `;
+
+            if (data.warnings.length > 0) {
+                html += '<h4 style="margin-top: 20px;">⚠️ Warnings:</h4><ul>';
+                data.warnings.forEach(warning => {
+                    html += `<li style="margin: 5px 0;">${warning}</li>`;
+                });
+                html += '</ul>';
+            }
+
+            if (data.errors.length > 0) {
+                html += '<h4 style="margin-top: 20px;">❌ Errors:</h4><ul>';
+                data.errors.forEach(error => {
+                    html += `<li style="margin: 5px 0; color: red;">${error}</li>`;
+                });
+                html += '</ul>';
+            }
+
+            html += '</div>';
+            document.getElementById('statsResult').innerHTML = html;
+        }
+
+        async function viewHistory() {
+            showLoading(true, 'Loading history...');
+            
+            try {
+                const response = await fetch('/api/get-history');
+                const result = await response.json();
+                
+                if (result.success && result.data.history.length > 0) {
+                    displayHistory(result.data);
+                } else {
+                    alert('No history available yet. Start fetching data to build history!');
+                }
+            } catch (error) {
+                alert('Failed to load history: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function displayHistory(data) {
+            let html = `
+                <h3 style="color: #667eea;">📜 Data History (${data.total_snapshots} snapshots)</h3>
+                <p style="color: #666; margin: 10px 0;">Click to query historical data with AI</p>
+                <div style="max-height: 400px; overflow-y: auto; margin-top: 15px;">
+            `;
+            
+            data.history.forEach((snapshot) => {
+                const date = new Date(snapshot.timestamp);
+                const timeStr = date.toLocaleString();
+                
+                html += `
+                    <div style="
+                        padding: 15px;
+                        margin: 10px 0;
+                        background: #f8f9ff;
+                        border-radius: 10px;
+                        border-left: 4px solid #667eea;
+                        cursor: pointer;
+                    " onclick="selectHistoricalData('${snapshot.timestamp}')">
+                        <strong>📅 ${timeStr}</strong><br>
+                        <span style="color: #666;">Source: ${snapshot.source} | Rows: ${snapshot.rows.toLocaleString()}</span>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8); z-index: 10000; display: flex;
+                justify-content: center; align-items: center; padding: 20px;
+            `;
+            modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: white; border-radius: 15px; padding: 30px;
+                max-width: 800px; width: 100%; max-height: 80vh; overflow-y: auto;
+            `;
+            content.innerHTML = html + `
+                <button class="btn btn-secondary" onclick="this.closest('div').parentElement.remove()" style="margin-top: 20px;">
+                    Close
+                </button>
+            `;
+            
+            modal.appendChild(content);
+            document.body.appendChild(modal);
+        }
+
+        async function selectHistoricalData(timestamp) {
+            alert("Historical data selection via AI query has been replaced by the Smart Assistant. " + 
+                  "Please load a dataset and use the Smart Assistant widget!");
+            const modal = document.querySelector('[style*="position: fixed"]');
+            if (modal) modal.remove();
+        }
+
+        function updateStatus(text, type) {
+            const badge = document.getElementById('statusBadge');
+            badge.innerHTML = `✓ ${text}`;
+            badge.className = `status-badge status-${type}`;
+            
+            document.getElementById('downloadBtn').style.display = 'inline-block';
+            document.getElementById('downloadBtn').disabled = false;
+            document.getElementById('downloadAnomalyBtn').style.display = 'inline-block';
+            document.getElementById('downloadAnomalyBtn').disabled = false;
+        }
+
+        function enableControls() {
+            document.getElementById('statsBtn').disabled = false;
+            document.getElementById('qualityBtn').disabled = false;
+        }
+
+
+
+        function createTable(data) {
+            if (!data || data.length === 0) {
+                return '<p>No data to display</p>';
+            }
+
+            const columns = Object.keys(data[0]);
+            let html = '<table><thead><tr>';
+            
+            columns.forEach(col => {
+                html += `<th>${col}</th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            data.slice(0, 100).forEach(row => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    let value = row[col];
+                    if (typeof value === 'number' && !Number.isInteger(value)) {
+                        value = value.toFixed(2);
+                    }
+                    html += `<td>${value ?? ''}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            
+            if (data.length > 100) {
+                html += `<p style="text-align: center; margin-top: 10px; color: #666;">
+                    Showing first 100 of ${data.length.toLocaleString()} rows
+                </p>`;
+            }
+            
+            return html;
+        }
+
+        function showAlert(elementId, message, type) {
+            const alertClass = type === 'error' ? 'alert-error' : type === 'info' ? 'alert-info' : 'alert-success';
+            const html = `<div class="alert ${alertClass}" style="margin-top: 15px;">${message}</div>`;
+            document.getElementById(elementId).innerHTML = html;
+        }
+
+        function showLoading(show, text = 'Processing with AI...') {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const chatHistory = document.getElementById('chatHistory');
+            
+            // Add user message
+            chatHistory.innerHTML += `
+                <div style="margin-bottom: 10px; text-align: right;">
+                    <div style="padding: 10px; background: #667eea; color: white; border-radius: 10px; display: inline-block; text-align: left;">
+                        ${message}
+                    </div>
+                </div>
+            `;
+            
+            input.value = '';
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+            showLoading(true, 'Assistant is typing...');
+
+            try {
+                const response = await fetch('/api/smart-assistant', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ query: message })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    chatHistory.innerHTML += `
+                        <div style="margin-bottom: 10px;">
+                            <div style="padding: 10px; background: white; border-radius: 10px; display: inline-block; border-left: 4px solid #667eea; max-width: 80%;">
+                                <strong>Assistant:</strong> ${result.response.replace(/\\n/g, '<br>')}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    chatHistory.innerHTML += `
+                        <div style="margin-bottom: 10px;">
+                            <div style="padding: 10px; background: #f8d7da; color: #721c24; border-radius: 10px; display: inline-block;">
+                                <strong>Error:</strong> ${result.error}
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                chatHistory.innerHTML += `
+                    <div style="margin-bottom: 10px;">
+                        <div style="padding: 10px; background: #f8d7da; color: #721c24; border-radius: 10px; display: inline-block;">
+                            <strong>Error:</strong> Failed to connect to assistant.
+                        </div>
+                    </div>
+                `;
+            } finally {
+                showLoading(false);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+            }
+        }
+        
+        // Handle Enter key for chat
+        document.getElementById('chatInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+
+        // Floating Assistant Logic
+        function toggleAssistant() {
+            const widget = document.getElementById('smartAssistantWidget');
+            widget.classList.toggle('active');
+        }
+    </script>
+
+    <!-- Floating Assistant FAB -->
+    <div class="assistant-fab" onclick="toggleAssistant()" title="Open Smart Assistant">
+        <!-- Animated SVG AI Bot Icon -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="botGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff" />
+                    <stop offset="100%" stop-color="#e0e8ff" />
+                </linearGradient>
+                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="2" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+            </defs>
+            <path d="M12 2v4" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="12" cy="2" r="2" fill="#00f2fe" filter="url(#glow)">
+                <animate attributeName="opacity" values="1;0.5;1" dur="1.5s" repeatCount="indefinite" />
+            </circle>
+            <rect x="3" y="6" width="18" height="14" rx="4" fill="url(#botGrad)"/>
+            <circle cx="8" cy="11" r="2" fill="#764ba2">
+                <animate attributeName="cy" values="11;10.5;11" dur="2s" repeatCount="indefinite" />
+            </circle>
+            <circle cx="16" cy="11" r="2" fill="#764ba2">
+                <animate attributeName="cy" values="11;10.5;11" dur="2s" repeatCount="indefinite" />
+            </circle>
+            <path d="M8 16 Q12 18 16 16" fill="none" stroke="#667eea" stroke-width="2" stroke-linecap="round">
+                <animate attributeName="d" values="M8 16 Q12 18 16 16;M8 15.5 Q12 18 16 15.5;M8 16 Q12 18 16 16" dur="3s" repeatCount="indefinite" />
+            </path>
+        </svg>
+    </div>
+
+    <!-- Floating Assistant Widget -->
+    <div id="smartAssistantWidget" class="floating-assistant">
+        <div class="assistant-header">
+            <span>🤖 AI Data Assistant</span>
+            <button class="assistant-close" onclick="toggleAssistant()">&times;</button>
+        </div>
+        <div id="chatHistory" class="assistant-body">
+            <div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 10px; display: inline-block; border-left: 4px solid #667eea; max-width: 90%;">
+                <strong>Assistant:</strong> Hello! I'm your Data Engineering Assistant powered by Gemini. Ask me any questions about your data!
+            </div>
+        </div>
+        <div class="assistant-footer">
+            <input type="text" id="chatInput" placeholder="Ask me anything...">
+            <button id="chatBtn" onclick="sendChatMessage()">Send</button>
+        </div>
+    </div>
+</body>
+</html>
